@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokemon Shiny Hunt Tracker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="tracker-container">
+        <!-- Current Hunt Section -->
+        <div class="section">
+            <div class="section-title">Current Hunt</div>
+            <div class="pokemon-display">
+                <img id="pokemon-image" src="" alt="Pokemon" class="pokemon-sprite">
+                <div class="counter-display">
+                    <span id="counter-value">0</span>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Failed Catches Section -->
+        <div class="section">
+            <div class="section-title">Failed Catches</div>
+            <div class="counter-display">
+                <span id="failed-catches-value">0</span>
+            </div>
+        </div>
+
+        <!-- Last Shiny Section -->
+        <div class="section">
+            <div class="section-title">Last Shiny</div>
+            <div class="pokemon-display">
+                <img id="last-shiny-image" class="pokemon-sprite">
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
