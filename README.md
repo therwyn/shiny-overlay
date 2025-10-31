@@ -5,11 +5,13 @@ A simple web-based overlay for Pokemon shiny hunts designed for streaming with T
 ## Setup Instructions
 
 1. **Install Dependencies**
+
    ```bash
    npm install
    ```
 
 2. **Configure File Paths**
+
    Create a `config.json` file to set your file paths:
    ```json
    {
@@ -19,17 +21,23 @@ A simple web-based overlay for Pokemon shiny hunts designed for streaming with T
      "lastShinyImage": "path/to/your/last_shiny.png"
    }
    ```
+
 3. **Configure Hosts File**
+
    Add the following to your hosts file:
    ```text
    127.0.0.1 shiny.local # feel free to change the domain to whatever you want
    ```
    This will allow you to access the overlay at `http://shiny.local` (or whatever you changed the domain to) from your browser, as TikTok Live Studio requires a "valid" URL.
+
 4. **Start the Server**
+
    ```bash
    npm start
    ```
+
 5. **Add to TikTok Live Studio**
+
    - Open TikTok Live Studio
    - Add a new source
    - Choose "Link" as the source type
