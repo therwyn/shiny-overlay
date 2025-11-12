@@ -10,21 +10,16 @@ const PORT = 80;
 app.use(cors());
 app.use(express.static('.'));
 
-// Load configuration
-let config = {};
-try {
-  config = JSON.parse(fs.readFileSync('config.json', 'utf8'));
-} catch (error) {
-  console.error('Error loading config.json:', error.message);
-  process.exit(1);
-}
-
+// Configuration defaults
 const defaultSectionConfig = {
   currentHunt: true,
   failedAttempts: false,
   lastShiny: true,
   livingDex: false,
 };
+
+// Load configuration
+let config = {};
 
 function getSectionConfig() {
   const sectionConfig = config.sections && typeof config.sections === 'object'
@@ -39,6 +34,40 @@ function getSectionConfig() {
     {}
   );
 }
+
+function loadConfig() {
+  try {
+    const newConfig = JSON.parse(fs.readFileSync('config.json', 'utf8'));
+    config = newConfig;
+    console.log('✓ Config reloaded successfully');
+    console.log(`  Counter file: ${config.counterFilePath || 'Not configured'}`);
+    console.log(`  Pokemon image: ${config.pokemonImage || 'Not configured'}`);
+    console.log(`  Sections: ${JSON.stringify(getSectionConfig())}`);
+    return true;
+  } catch (error) {
+    console.error('Error loading config.json:', error.message);
+    console.error('  Keeping previous configuration');
+    return false;
+  }
+}
+
+// Initial load
+if (!loadConfig()) {
+  process.exit(1);
+}
+
+// Watch for config file changes
+let reloadTimeout;
+fs.watch('config.json', (eventType) => {
+  if (eventType === 'change') {
+    // Debounce: wait 100ms before reloading to handle multiple events
+    clearTimeout(reloadTimeout);
+    reloadTimeout = setTimeout(() => {
+      console.log('\n[Config change detected] Reloading config.json...');
+      loadConfig();
+    }, 100);
+  }
+});
 
 // API endpoint to get counter value
 app.get('/api/counter', (req, res) => {
