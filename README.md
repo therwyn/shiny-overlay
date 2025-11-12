@@ -18,7 +18,15 @@ A simple web-based overlay for Pokemon shiny hunts designed for streaming with T
      "counterFilePath": "path/to/your/counter.txt",
      "pokemonImage": "path/to/your/pokemon.png",
      "failedCatchesFilePath": "path/to/your/failed_catches.txt",
-     "lastShinyImage": "path/to/your/last_shiny.png"
+     "lastShinyImage": "path/to/your/last_shiny.png",
+     "livingDexCount": "path/to/your/living_dex_count.txt",
+     "livingDexTotal": 0,
+     "sections": {
+       "currentHunt": true,
+       "failedAttempts": true,
+       "lastShiny": true,
+       "livingDex": false
+     }
    }
    ```
 
@@ -49,7 +57,8 @@ A simple web-based overlay for Pokemon shiny hunts designed for streaming with T
 - The counter updates automatically every second by reading from your text files
 - When you update the Pokemon image file path in `config.json`, the new image will load automatically
 - The background is transparent, perfect for overlaying on your stream
-- The failed catches counter is updated automatically by reading from your text file
+- Toggle any overlay section on or off by updating the boolean flags under `sections` in `config.json`
+- The shiny living dex section reads the `livingDexCount` text file and displays it alongside the static `livingDexTotal`
 - The last shiny image is updated automatically by reading from your image file
 
 ## File Structure

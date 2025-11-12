@@ -80,6 +80,27 @@ body {
     align-items: center;
 }
 
+.ratio-display {
+    font-size: 36px;
+    font-weight: bold;
+    color: #ffffff;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    text-align: center;
+    background: rgba(0, 0, 0, 0.1);
+    padding: 15px;
+    border-radius: 10px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    width: 300px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.ratio-separator {
+    display: inline-block;
+}
+
 #counter-value,
 #failed-catches-value {
     display: block;

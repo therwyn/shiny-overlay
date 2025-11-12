@@ -19,6 +19,27 @@ try {
   process.exit(1);
 }
 
+const defaultSectionConfig = {
+  currentHunt: true,
+  failedAttempts: false,
+  lastShiny: true,
+  livingDex: false,
+};
+
+function getSectionConfig() {
+  const sectionConfig = config.sections && typeof config.sections === 'object'
+    ? config.sections
+    : {};
+
+  return Object.entries({ ...defaultSectionConfig, ...sectionConfig }).reduce(
+    (acc, [key, value]) => {
+      acc[key] = Boolean(value);
+      return acc;
+    },
+    {}
+  );
+}
+
 // API endpoint to get counter value
 app.get('/api/counter', (req, res) => {
   try {
@@ -86,6 +107,16 @@ app.get('/api/failed-catches', (req, res) => {
   }
 });
 
+// API endpoint to get section configuration
+app.get('/api/config/sections', (_req, res) => {
+  try {
+    res.json({ sections: getSectionConfig() });
+  } catch (error) {
+    console.error('Error serving section configuration:', error.message);
+    res.status(500).json({ error: 'Failed to load section configuration' });
+  }
+});
+
 // API endpoint to get last shiny Pokemon image info
 app.get('/api/last-shiny', (req, res) => {
   try {
@@ -107,9 +138,48 @@ app.get('/api/last-shiny', (req, res) => {
   }
 });
 
+// API endpoint to get living dex info
+app.get('/api/living-dex', (req, res) => {
+  try {
+    const sections = getSectionConfig();
+    if (!sections.livingDex) {
+      return res.status(404).json({ error: 'Living dex section disabled' });
+    }
+
+    const livingDexCountPath = config.livingDexCount;
+    const livingDexTotalRaw = config.livingDexTotal;
+
+    if (!livingDexCountPath) {
+      return res.status(500).json({ error: 'Living dex count file path not configured' });
+    }
+
+    const livingDexTotal = Number(livingDexTotalRaw);
+    if (!Number.isFinite(livingDexTotal) || livingDexTotal < 0) {
+      return res.status(500).json({ error: 'Living dex total must be a non-negative number' });
+    }
+
+    if (!fs.existsSync(livingDexCountPath)) {
+      return res.status(404).json({ error: 'Living dex count file not found' });
+    }
+
+    const rawCount = fs.readFileSync(livingDexCountPath, 'utf8').trim();
+    const livingDexCount = parseInt(rawCount, 10);
+
+    if (Number.isNaN(livingDexCount) || livingDexCount < 0) {
+      return res.status(500).json({ error: 'Living dex count file must contain a non-negative integer' });
+    }
+
+    res.json({ count: livingDexCount, total: livingDexTotal });
+  } catch (error) {
+    console.error('Error reading living dex data:', error.message);
+    res.status(500).json({ error: 'Failed to read living dex data' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Pokemon Shiny Hunt Tracker server running on http://shiny.local`);
   console.log('Add this URL as a link source in TikTok Live Studio');
   console.log(`Counter file: ${config.counterFilePath || 'Not configured'}`);
   console.log(`Pokemon image: ${config.pokemonImage || 'Not configured'}`);
+  console.log(`Sections: ${JSON.stringify(getSectionConfig())}`);
 });
