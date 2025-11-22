@@ -1,0 +1,148 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Fetch at least 2 commits to compare versions
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build executable
+        run: npm run build:exe
+      
+      - name: Upload build artifact (for debugging)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: executable-build
+          path: dist/*.exe
+          retention-days: 7
+      
+      - name: Read current version from package.json
+        id: current-version
+        run: |
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+          echo "Current version: $version"
+      
+      - name: Check previous version
+        id: previous-version
+        run: |
+          # Check if there's a parent commit
+          $parentCommit = git rev-parse HEAD~1 2>$null
+          if ($parentCommit -and $LASTEXITCODE -eq 0) {
+            try {
+              $prevPackageJson = git show "$parentCommit:package.json" 2>$null
+              if ($prevPackageJson -and $LASTEXITCODE -eq 0) {
+                $prevVersion = ($prevPackageJson | ConvertFrom-Json).version
+                echo "version=$prevVersion" >> $env:GITHUB_OUTPUT
+                echo "Previous version: $prevVersion"
+              } else {
+                echo "version=" >> $env:GITHUB_OUTPUT
+                echo "Could not read package.json from previous commit"
+              }
+            } catch {
+              echo "version=" >> $env:GITHUB_OUTPUT
+              echo "Error parsing previous version"
+            }
+          } else {
+            echo "version=" >> $env:GITHUB_OUTPUT
+            echo "No previous commit found (this will be the first release)"
+          }
+      
+      - name: Check if version changed
+        id: version-changed
+        run: |
+          $current = "${{ steps.current-version.outputs.version }}"
+          $previous = "${{ steps.previous-version.outputs.version }}"
+          if ($current -eq $previous) {
+            echo "changed=false" >> $env:GITHUB_OUTPUT
+            echo "Version unchanged ($current). Skipping release."
+          } else {
+            echo "changed=true" >> $env:GITHUB_OUTPUT
+            if ($previous) {
+              echo "Version changed from $previous to $current. Creating release."
+            } else {
+              echo "First release with version $current. Creating release."
+            }
+          }
+      
+      - name: Get short SHA
+        id: commit-sha
+        run: |
+          $sha = $env:GITHUB_SHA.Substring(0, 7)
+          echo "sha=$sha" >> $env:GITHUB_OUTPUT
+          echo "Commit SHA: $sha"
+      
+      - name: Find executable
+        id: find-exe
+        if: steps.version-changed.outputs.changed == 'true'
+        run: |
+          $exePath = Get-ChildItem -Path dist -Filter "*.exe" | Select-Object -First 1
+          if (-not $exePath) {
+            Write-Error "Executable not found in dist folder"
+            exit 1
+          }
+          $exeName = $exePath.Name
+          $exeSize = [math]::Round($exePath.Length / 1MB, 2)
+          echo "exe-name=$exeName" >> $env:GITHUB_OUTPUT
+          echo "Executable: $exeName"
+          echo "Size: $exeSize MB"
+          echo "Full path: $($exePath.FullName)"
+      
+      - name: Create Release
+        if: steps.version-changed.outputs.changed == 'true'
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.current-version.outputs.version }}
+          name: Release v${{ steps.current-version.outputs.version }}
+          body: |
+            Release v${{ steps.current-version.outputs.version }}
+            
+            **Commit:** `${{ steps.commit-sha.outputs.sha }}`
+            
+            ## Quick Start
+            
+            1. Download `${{ steps.find-exe.outputs.exe-name }}` below
+            2. Place it in a folder of your choice
+            3. Double-click to run (may require admin elevation to edit hosts file)
+            4. Follow the console instructions to set up your files
+            
+            ## Setup Instructions
+            
+            After first run, the executable will create:
+            - `config.json` template (edit this to configure your file paths)
+            - `img/` folder (place your Pokemon images here)
+            - `txt/` folder (place your counter files here, e.g., `shiny.txt`, `failed_catches.txt`)
+            
+            Edit `config.json` to point to your files and images, then run the executable again.
+            
+            ## Usage
+            
+            Once running, add `http://shiny.local` as a link source in TikTok Live Studio.
+            
+            **Note:** This executable does not include any Pokemon images or copyrighted materials. You must provide your own images and text files.
+          files: dist/${{ steps.find-exe.outputs.exe-name }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
