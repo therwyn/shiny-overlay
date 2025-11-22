@@ -1,6 +1,6 @@
 {
   "name": "pokemon-shiny-hunt-tracker",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A simple tracker for Pokemon shiny hunts with transparent background for streaming",
   "main": "server.js",
   "bin": "server.js",
