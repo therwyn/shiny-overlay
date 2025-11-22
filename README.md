@@ -74,6 +74,50 @@ shiny-overlay/
 └── README.md             # This file
 ```
 
+## Building Standalone Executable
+
+To create a standalone Windows executable that doesn't require Node.js installation:
+
+1. **Install pkg globally** (if not already installed):
+   ```bash
+   npm install -g pkg
+   ```
+
+2. **Install dev dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Build the executable**:
+   ```bash
+   npm run build:exe
+   ```
+
+   This will create `dist/pokemon-shiny-hunt-tracker.exe` (or similar name based on package.json name).
+
+4. **Distribute the executable**:
+   - The executable bundles Node.js runtime and all web files (HTML, CSS, JS)
+   - Users only need the `.exe` file - no Node.js installation required
+   - Users should place their own images and text files in folders next to the executable
+   - The executable will automatically:
+     - Create a default `config.json` template on first run
+     - Attempt to add the hosts file entry (may require admin elevation)
+     - Start the server on port 80
+
+### User Instructions for Executable
+
+1. Download and place `pokemon-shiny-hunt-tracker.exe` in a folder
+2. Double-click to run (may prompt for admin to edit hosts file)
+3. A `config.json` template will be created if missing
+4. Create `img/` and `txt/` folders next to the executable
+5. Add your Pokemon images to `img/` folder
+6. Add your counter files to `txt/` folder (e.g., `shiny.txt`, `failed_catches.txt`)
+7. Edit `config.json` to point to your files (paths can be relative to the executable)
+8. Run the executable again
+9. Open TikTok Live Studio and add `http://shiny.local` as a link source
+
+**Note**: The executable does not include any Pokemon images or copyrighted materials. Users must provide their own images and text files.
+
 ## Troubleshooting
 
 - Make sure the counter file exists and contains only a number
