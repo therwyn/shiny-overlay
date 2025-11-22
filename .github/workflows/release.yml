@@ -2,8 +2,8 @@ name: Build and Release
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'  # Triggers on tags starting with 'v' (e.g., v1.0.0, v1.2.3)
 
 jobs:
   build-and-release:
@@ -12,8 +12,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 2  # Fetch at least 2 commits to compare versions
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -27,62 +25,14 @@ jobs:
       - name: Build executable
         run: npm run build:exe
       
-      - name: Upload build artifact (for debugging)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: executable-build
-          path: dist/*.exe
-          retention-days: 7
-      
-      - name: Read current version from package.json
-        id: current-version
+      - name: Extract version from tag
+        id: tag-version
         run: |
-          $version = (Get-Content package.json | ConvertFrom-Json).version
+          $tag = "${{ github.ref_name }}"
+          $version = $tag -replace '^v', ''
           echo "version=$version" >> $env:GITHUB_OUTPUT
-          echo "Current version: $version"
-      
-      - name: Check previous version
-        id: previous-version
-        run: |
-          # Check if there's a parent commit
-          $parentCommit = git rev-parse HEAD~1 2>$null
-          if ($parentCommit -and $LASTEXITCODE -eq 0) {
-            try {
-              $prevPackageJson = git show "$parentCommit:package.json" 2>$null
-              if ($prevPackageJson -and $LASTEXITCODE -eq 0) {
-                $prevVersion = ($prevPackageJson | ConvertFrom-Json).version
-                echo "version=$prevVersion" >> $env:GITHUB_OUTPUT
-                echo "Previous version: $prevVersion"
-              } else {
-                echo "version=" >> $env:GITHUB_OUTPUT
-                echo "Could not read package.json from previous commit"
-              }
-            } catch {
-              echo "version=" >> $env:GITHUB_OUTPUT
-              echo "Error parsing previous version"
-            }
-          } else {
-            echo "version=" >> $env:GITHUB_OUTPUT
-            echo "No previous commit found (this will be the first release)"
-          }
-      
-      - name: Check if version changed
-        id: version-changed
-        run: |
-          $current = "${{ steps.current-version.outputs.version }}"
-          $previous = "${{ steps.previous-version.outputs.version }}"
-          if ($current -eq $previous) {
-            echo "changed=false" >> $env:GITHUB_OUTPUT
-            echo "Version unchanged ($current). Skipping release."
-          } else {
-            echo "changed=true" >> $env:GITHUB_OUTPUT
-            if ($previous) {
-              echo "Version changed from $previous to $current. Creating release."
-            } else {
-              echo "First release with version $current. Creating release."
-            }
-          }
+          echo "Tag: $tag"
+          echo "Version: $version"
       
       - name: Get short SHA
         id: commit-sha
@@ -93,7 +43,6 @@ jobs:
       
       - name: Find executable
         id: find-exe
-        if: steps.version-changed.outputs.changed == 'true'
         run: |
           $exePath = Get-ChildItem -Path dist -Filter "*.exe" | Select-Object -First 1
           if (-not $exePath) {
@@ -108,14 +57,13 @@ jobs:
           echo "Full path: $($exePath.FullName)"
       
       - name: Create Release
-        if: steps.version-changed.outputs.changed == 'true'
         id: create_release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ steps.current-version.outputs.version }}
-          name: Release v${{ steps.current-version.outputs.version }}
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
           body: |
-            Release v${{ steps.current-version.outputs.version }}
+            Release ${{ github.ref_name }}
             
             **Commit:** `${{ steps.commit-sha.outputs.sha }}`
             
@@ -143,6 +91,7 @@ jobs:
           files: dist/${{ steps.find-exe.outputs.exe-name }}
           draft: false
           prerelease: false
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
